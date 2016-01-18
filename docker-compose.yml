@@ -1,0 +1,7 @@
+fw:
+  build: .
+  command: python firmware.py
+  ports:
+   - "5000:5000"
+  volumes:
+   - .:/code
