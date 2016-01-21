@@ -11,12 +11,14 @@ app.logger.setLevel(logging.DEBUG)
 app.logger.info("Firmware application started.")
 
 @app.route('/test', methods=['GET'])
-def test():
-    pass
+def test_get():
+    return "Hello World!"
 
-@app.errorhandler(404)
-def not_found(error):
-    return make_response(jsonify({'error': 'Not found'}), 404)
+@app.route('/test2', methods=['POST'])
+def test_post():
+    json_data = request.get_json(force=True)
+    app.logger.debug("JSON=%s", json_data)
+    return jsonify(json_data)
 
 if __name__ == '__main__':
     app.run(debug=True)
