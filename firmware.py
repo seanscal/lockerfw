@@ -2,10 +2,8 @@
 # Northeastern University 2016
 import sys
 import logging
-import models
 from flask import Flask, jsonify, request, make_response
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from flask.ext.sqlalchemy import SQLAlchemy
 from datetime import datetime
 
 
@@ -15,34 +13,57 @@ GPIO_LOCKER1 = 11
 GPIO_LOCKER2 = 12
 GPIO_LOCKER3 = 13
 
-
 app = Flask(__name__)
 app.logger.addHandler(logging.StreamHandler(sys.stdout))
 app.logger.setLevel(logging.DEBUG)
 app.logger.info("Firmware application started.")
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///records.db'
+db = SQLAlchemy(app)
 
-@app.route('/init')
-def intialize_backend():
-    """
-    Initialize SQLite database
-
-    :return:
-    """
-    global engine
-    engine = create_engine('sqlite:///records.db', echo=True)
+app.logger.info("Started backend engine.")
 
 
-@app.route('/get_uid')
+class Record(db.Model):
+    __tablename__ = 'records'
+    id = db.Column(db.Integer, primary_key=True)
+    customer_id = db.Column(db.Integer, nullable=False)
+    locker_id = db.Column(db.Integer, nullable=False)
+    date_in = db.Column(db.DateTime, nullable=False)
+    date_out = db.Column(db.DateTime, nullable=True)
+    checked_out = db.Column(db.Boolean, nullable=False)
+
+    @property
+    def serialize(self):
+        return {
+            'customer_id': self.customer_id,
+            'locker_id': self.locker_id,
+            'date_in': dump_datetime(self.date_in),
+            'date_out': dump_datetime(self.date_out),
+            'checkout_out': self.checked_out
+        }
+
+
+@app.route('/get_uid', methods=['GET'])
 def get_uid():
     """
     Return UID of LockrHub
 
     :return: UID
     """
-    return UID
+    return str(UID)
 
 
-@app.route('/allocate_locker')
+@app.route('/get_coordinates', methods=['GET'])
+def get_coordinates():
+    """
+    Return physical location of the LockrHub
+
+    :return: coordinates
+    """
+    return str(COORDINATES)
+
+
+@app.route('/allocate_locker', methods=['POST'])
 def allocate_locker():
     """
     Allocate locker to given user.
@@ -54,34 +75,44 @@ def allocate_locker():
     :return: response
     """
     json_data = request.get_json(force=True)
-    customer_id = json_data['customer_id']
-    locker_id = json_data['locker_id']
+    customer_id = _protected_input(json_data, 'customer_id')
+    locker_id = _protected_input(json_data, 'locker_id')
     assert customer_id
 
-    if json_data[locker_id]:
-        if not _is_locker_open(locker_id):
+    if locker_id:
+        if _is_locker_open(locker_id):
+            response = _allocate_locker(customer_id, locker_id)
+        else:
             response = "err"
-        response = _allocate_locker(customer_id, locker_id)
     else:
         response = _allocate_locker(customer_id)
 
-    return response
+    return jsonify(response)
 
 
-@app.route('deallocate_locker')
+@app.route('/deallocate_locker', methods=['POST'])
 def deallocate_locker():
     """
-    Deallocate locker of the given user.
+    Deallocate locker the given locker.
 
     :return: 1 if successful, 0 if unsuccessful, -1 if error
     """
     json_data = request.get_json(force=True)
+
+    locker_id = _protected_input(json_data, 'locker_id')
+    assert locker_id
+
+    response = _deallocate_locker(locker_id)
+
+    return jsonify(response)
+
+
+@app.route('/customer_status', methods=['GET'])
+def customer_status():
+    json_data = request.get_json(force=True)
     customer_id = json_data['customer_id']
-    assert customer_id
-
-    response = _deallocate_locker(customer_id)
-
-    return response
+    record_list = Record.query.filter_by(customer_id=customer_id).all()
+    return jsonify(json_list=[i.serialize for i in record_list])
 
 
 def _allocate_locker(customer_id, locker_id=None):
@@ -95,21 +126,23 @@ def _allocate_locker(customer_id, locker_id=None):
     :param locker_id:
     :return:
     """
-    Session = sessionmaker(bind=engine)
-    session = Session()
+    if locker_id is None:
+        # TODO - write auto assign locker
+        pass
 
-    new_record = models.Record(customer_id=customer_id,
-                               locker_id=locker_id,
-                               date_in=datetime,
-                               checked_out=True
-                               )
+    new_record = Record(customer_id=customer_id,
+                        locker_id=locker_id,
+                        date_in=datetime.utcnow(),
+                        checked_out=True
+                        )
 
-    session.add(new_record)
-    session.commit()
+    db.session.add(new_record)
+    db.session.commit()
+
+    return new_record.serialize
 
 
-
-def _deallocate_locker(customer_id):
+def _deallocate_locker(locker_id):
     """
     End current locker rental for given customer.
 
@@ -119,14 +152,12 @@ def _deallocate_locker(customer_id):
     :param customer_id:
     :return:
     """
-    Session = sessionmaker(bind=engine)
-    session = Session()
-
-    record = session.query(models.Record).filter_by(customer_id=customer_id)
+    record = Record.query.filter_by(locker_id=locker_id, checked_out=True).first()
     app.logger.info("Retrieved record %s.", record)
-
     record.checked_out = False
-    record.date_out = datetime
+    record.date_out = datetime.utcnow()
+    db.session.commit()
+    return record.serialize
 
 
 def _is_locker_open(locker_id):
@@ -136,18 +167,48 @@ def _is_locker_open(locker_id):
     :param locker_id:
     :return: boolean: True if open, False if not open.
     """
-    Session = sessionmaker(bind=engine)
-    session = Session()
+    record = Record.query.filter_by(locker_id=locker_id, checked_out=True).all()
 
-    record = session.query(models.Record).filter_by(locker_id=locker_id)
-    app.logger.info("Retrieved record %s.", record)
+    if record:
+        app.logger.info("Retrieved record %s.", record)
+        status = False
+    else:
+        status = True
 
-    return record.checked_out
+    return status
+
+
+def dump_datetime(value):
+    """
+    Deserialize datetime object into string form for JSON processing.
+
+    :param value:
+    :return:
+    """
+    if value is None:
+        return None
+    return [value.strftime("%Y-%m-%d"), value.strftime("%H:%M:%S")]
+
+
+def _protected_input(json_data, parameter_name):
+    """
+    Return string if parameter_name exists within json_data
+    Otherwise return None.
+
+    :param parameter_name:
+    :return:
+    """
+    try:
+        value = json_data[parameter_name]
+    except KeyError:
+        value = None
+    return str(value)
 
 
 @app.route('/test', methods=['GET'])
 def test_get():
     return "Hello World!"
+
 
 @app.route('/test2', methods=['POST'])
 def test_post():
@@ -155,7 +216,10 @@ def test_post():
     app.logger.debug("JSON=%s", json_data)
     return jsonify(json_data)
 
+
 if __name__ == '__main__':
+    db.create_all()
     app.run(host='0.0.0.0', debug=True)
+
 
 
