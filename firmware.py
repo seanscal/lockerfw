@@ -7,15 +7,15 @@ from flask.ext.sqlalchemy import SQLAlchemy
 from datetime import datetime
 import RPI.GPIO as GPIO
 import time
-Open_time = 15
-GPIO.setmode(GPIO.BOARD)
-
 
 UID = 12345
 COORDINATES = (42.34, -71.09)
 GPIO_LOCKER1 = 11
 GPIO_LOCKER2 = 12
 GPIO_LOCKER3 = 13
+
+Open_time = 15
+GPIO.setmode(GPIO.BOARD)
 lockers = [GPIO_LOCKER1,GPIO_LOCKER2,GPIO_LOCKER3]
 GPIO.setup(lockers, GPIO.OUT, initial=GPIO.LOW)
 
