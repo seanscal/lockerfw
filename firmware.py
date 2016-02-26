@@ -5,6 +5,10 @@ import logging
 from flask import Flask, jsonify, request, make_response
 from flask.ext.sqlalchemy import SQLAlchemy
 from datetime import datetime
+import RPI.GPIO as GPIO
+import time
+Open_time = 15
+GPIO.setmode(GPIO.BOARD)
 
 
 UID = 12345
@@ -12,6 +16,8 @@ COORDINATES = (42.34, -71.09)
 GPIO_LOCKER1 = 11
 GPIO_LOCKER2 = 12
 GPIO_LOCKER3 = 13
+lockers = [GPIO_LOCKER1,GPIO_LOCKER2,GPIO_LOCKER3]
+GPIO.setup(lockers, GPIO.OUT, initial=GPIO.LOW)
 
 app = Flask(__name__)
 app.logger.addHandler(logging.StreamHandler(sys.stdout))
@@ -121,6 +127,19 @@ def get_customer_status():
     customer_id = json_data['customer_id']
     record_list = Record.query.filter_by(customer_id=customer_id).all()
     return jsonify(json_list=[i.serialize for i in record_list])
+
+@app.route('/open_locker',methods=['POST'])
+def open_locker(locker_id):
+    #Opens locker for set amount of time
+    if _is_locker_open(locker_id):
+        response = Record.query.filter_by(locker_id=locker_id, checked_out=True).first()
+        GPIO.output(locker_id, GPIO.HIGH)
+        sleep(Open_time)
+        GPIO.output(pin_numer,GPIO.LOW)
+    else:
+        response = 'err'
+    
+    return response
 
 
 def _allocate_locker(customer_id, locker_id=None):
