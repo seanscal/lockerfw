@@ -68,9 +68,10 @@ def allocate_locker():
     """
     Allocate locker to given user.
 
-    If locker number not specified, auto select an open locker.
-    If no lockers are specified, return error.
-    Otherwise, return the corresponding locker number.
+    A customer ID and locker ID must be given.
+
+    TODO (If locker number not specified, auto select an open locker.
+    If no lockers are available, return error.)
 
     :return: response
     """
@@ -93,9 +94,11 @@ def allocate_locker():
 @app.route('/deallocate_locker', methods=['POST'])
 def deallocate_locker():
     """
-    Deallocate locker the given locker.
+    End locker rental on the given locker.
 
-    :return: 1 if successful, 0 if unsuccessful, -1 if error
+    A locker ID must be given.
+
+    :return: response
     """
     json_data = request.get_json(force=True)
 
@@ -108,7 +111,12 @@ def deallocate_locker():
 
 
 @app.route('/customer_status', methods=['GET'])
-def customer_status():
+def get_customer_status():
+    """
+    Return complete history of rentals on this locker hub for a specific customer.
+
+    :return: a list of record responses
+    """
     json_data = request.get_json(force=True)
     customer_id = json_data['customer_id']
     record_list = Record.query.filter_by(customer_id=customer_id).all()
