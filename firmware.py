@@ -135,7 +135,7 @@ def open_locker(locker_id):
         response = Record.query.filter_by(locker_id=locker_id, checked_out=True).first()
         GPIO.output(locker_id, GPIO.HIGH)
         sleep(Open_time)
-        GPIO.output(pin_numer,GPIO.LOW)
+        GPIO.output(locker_id,GPIO.LOW)
     else:
         response = 'err'
     
