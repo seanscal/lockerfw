@@ -28,7 +28,6 @@ db = SQLAlchemy(app)
 
 app.logger.info("Started backend engine.")
 
-
 class Record(db.Model):
     __tablename__ = 'records'
     id = db.Column(db.Integer, primary_key=True)
@@ -134,7 +133,7 @@ def open_locker(locker_id):
     if _is_locker_open(locker_id):
         response = Record.query.filter_by(locker_id=locker_id, checked_out=True).first()
         GPIO.output(locker_id, GPIO.HIGH)
-        sleep(Open_time)
+        time.sleep(Open_time)
         GPIO.output(locker_id,GPIO.LOW)
     else:
         response = 'err'
@@ -154,8 +153,7 @@ def _allocate_locker(customer_id, locker_id=None):
     :return:
     """
     if locker_id is None:
-        # TODO - write auto assign locker
-        pass
+        locker_id = _find_open_locker()
 
     new_record = Record(customer_id=customer_id,
                         locker_id=locker_id,
@@ -168,6 +166,15 @@ def _allocate_locker(customer_id, locker_id=None):
 
     return new_record.serialize
 
+def _find_open_locker():
+    """
+    Finds an open locker to assign to customer
+    
+    :return locker_id:
+    """
+    for locker in lockers:
+        if _is_locker_open(locker):
+            return locker
 
 def _deallocate_locker(locker_id):
     """
@@ -245,8 +252,10 @@ def test_post():
 
 
 if __name__ == '__main__':
-    db.create_all()
-    app.run(host='0.0.0.0', debug=True)
-
+    try:
+        db.create_all()
+        app.run(host='0.0.0.0', debug=True)
+    except KeyboardInterrupt:
+        GPIO.cleanup()
 
 
