@@ -4,7 +4,7 @@ default: all
 all: run
 
 run: $(SRCFILES)
-	pip install -r requirements.txt
+	pip install --upgrade pip && pip install -r requirements.txt
 	python firmware.py
 
 clean:
