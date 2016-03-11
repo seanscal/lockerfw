@@ -139,7 +139,17 @@ def open_locker(locker_id):
         response = 'err'
     
     return response
+    
+@app.route('/find_open_lockers', methods = ['GET'])
+"""
+Returns open locker ids
 
+not tested yet
+"""
+def find_open_lockers():
+    open_lockers = _open_lockers()
+    
+    return jsonify(json_list=[i for i in open_locker])
 
 def _allocate_locker(customer_id, locker_id=None):
     """
@@ -153,7 +163,7 @@ def _allocate_locker(customer_id, locker_id=None):
     :return:
     """
     if locker_id is None:
-        locker_id = _find_open_locker()
+        locker_id = _open_lockers()[0]
 
     new_record = Record(customer_id=customer_id,
                         locker_id=locker_id,
@@ -166,15 +176,18 @@ def _allocate_locker(customer_id, locker_id=None):
 
     return new_record.serialize
 
-def _find_open_locker():
+def _open_lockers():
     """
-    Finds an open locker to assign to customer
+    Finds all open lockers
     
     :return locker_id:
     """
+    open_lockers = []
     for locker in lockers:
         if _is_locker_open(locker):
-            return locker
+            open_lockers.append(locker)
+    
+    return open_lockers
 
 def _deallocate_locker(locker_id):
     """
