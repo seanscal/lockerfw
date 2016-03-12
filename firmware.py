@@ -141,12 +141,23 @@ def get_customer_status():
 
 @app.route('/open_locker',methods=['POST'])
 def open_locker():
+    """
+    Turns on the GPIO pin associated with the locker. 
+    Locker id is pulled from customer's latest record
+    
+    :param: customer_id
+    :return: Customer record 
+    
+    Not Yet Tested
+    """
     json_data = request.get_json(force=True)
-    locker_id = _protected_input(json_data, 'locker_id')
+    customer_id = _protected_input(json_data, 'customer_id')
     
     #Opens locker for set amount of time
+    record = Record.query.filter_by(customer_id=customer_id, checked_out=True).first()
+    locker_id = record.locker_id
     if _is_locker_open(locker_id):
-        response = Record.query.filter_by(locker_id=locker_id, checked_out=True).first()
+        response = record
         GPIO.output(locker_id, GPIO.HIGH)
         time.sleep(Open_time)
         GPIO.output(locker_id,GPIO.LOW)
@@ -156,12 +167,12 @@ def open_locker():
     return response
     
 @app.route('/find_open_lockers', methods = ['GET'])
-"""
-Returns open locker ids
-
-not tested yet
-"""
 def find_open_lockers():
+    """
+    Returns open locker ids
+    
+    not tested yet
+    """
     open_lockers = _open_lockers()
     return jsonify(json_list=[i for i in open_locker])
 
@@ -191,7 +202,7 @@ def _allocate_locker(customer_id, pin, locker_id=None):
 
     return new_record.serialize
 
-def _open_lockers():
+def _find_open_lockers():
     """
     Finds all open lockers
     
@@ -233,6 +244,8 @@ def _deallocate_locker(customer_id):
     db.session.commit()
     return record.serialize
 
+def _open_locker(customer_id):
+    
 
 def _is_locker_open(locker_id):
     """
