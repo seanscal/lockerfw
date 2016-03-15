@@ -32,7 +32,7 @@ app.logger.info("Started backend engine.")
 
 class Record(db.Model):
     __tablename__ = 'records'
-    rental_id = db.Column(db.Integer, primary_key=False)
+    rental_id = db.Column(db.Integer, primary_key=True)
     customer_id = db.Column(db.Integer, nullable=False)
     locker_id = db.Column(db.Integer, nullable=False)
     date_allocated = db.Column(db.DateTime, nullable=False)
