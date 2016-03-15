@@ -5,8 +5,9 @@ import logging
 from flask import Flask, jsonify, request, make_response
 from flask.ext.sqlalchemy import SQLAlchemy
 from datetime import datetime
-import RPI.GPIO as GPIO
+import RPi.GPIO as GPIO
 import time
+import uuid
 
 UID = 12345
 COORDINATES = (42.34, -71.09)
@@ -31,9 +32,10 @@ app.logger.info("Started backend engine.")
 
 class Record(db.Model):
     __tablename__ = 'records'
-    rental_id = db.Column(db.Integer, primary_key=True)
+    rental_id = db.Column(db.Integer, primary_key=False)
     customer_id = db.Column(db.Integer, nullable=False)
     locker_id = db.Column(db.Integer, nullable=False)
+    date_allocated = db.Column(db.DateTime, nullable=False)
     date_in = db.Column(db.DateTime, nullable=True)
     date_out = db.Column(db.DateTime, nullable=True)
     checked_out = db.Column(db.Boolean, nullable=False)
@@ -45,10 +47,11 @@ class Record(db.Model):
             'rental_id': self.rental_id,
             'customer_id': self.customer_id,
             'locker_id': self.locker_id,
+            'date_allocated': _dump_datetime(self.date_allocated),
             'date_in': _dump_datetime(self.date_in),
             'date_out': _dump_datetime(self.date_out),
             'checkout_out': self.checked_out,
-            'pin' : self.pin
+            'pin': self.pin
         }
 
 
@@ -175,7 +178,7 @@ def open_locker():
         response = record
         GPIO.output(locker_id, GPIO.HIGH)
         time.sleep(OPEN_TIME)
-        GPIO.output(locker_id,GPIO.LOW)
+        GPIO.output(locker_id, GPIO.LOW)
     else:
         response = 'err'
 
@@ -206,12 +209,14 @@ def _allocate_locker(customer_id, pin, locker_id=None):
     :return:
     """
     if locker_id is None:
-        locker_id = find_open_lockers()[0]
+        locker_id = _find_open_lockers()[0]
 
-    new_record = Record(customer_id=customer_id,
+    new_record = Record(rental_id=uuid.uuid4(),
+                        customer_id=customer_id,
                         locker_id=locker_id,
                         checked_out=True,
-                        pin = pin
+                        pin=pin,
+                        date_allocated=datetime.utcnow()
                         )
 
     db.session.add(new_record)

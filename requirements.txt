@@ -1,4 +1,4 @@
 flask
 sqlalchemy
 Flask-SQLAlchemy==1.0
-RPi.GPIO
+RPI.GPIO
