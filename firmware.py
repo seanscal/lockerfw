@@ -176,9 +176,7 @@ def open_locker():
     locker_id = record.locker_id
     if _is_locker_open(locker_id):
         response = record
-        GPIO.output(locker_id, GPIO.HIGH)
-        time.sleep(OPEN_TIME)
-        GPIO.output(locker_id, GPIO.LOW)
+
     else:
         response = 'err'
 
@@ -224,7 +222,21 @@ def _allocate_locker(customer_id, pin, locker_id=None):
 
     return new_record.serialize
 
-
+def _open_locker(locker_id):
+    """
+    Private Open Locker Function
+    
+    Turns GPIO pin related to the locker_id to High for OPEN_TIME seconds
+    
+    :param locker_id:
+    :return:
+    """
+    GPIO.output(locker_id, GPIO.HIGH)
+    time.sleep(OPEN_TIME)
+    GPIO.output(locker_id, GPIO.LOW)
+    
+    return
+    
 def _find_open_lockers():
     """
     Finds all open lockers
@@ -286,8 +298,25 @@ def _is_locker_open(locker_id):
         status = True
 
     return status
-
-
+    
+def _pin_unlock(user_input):
+    user_input = str(user_input)
+    locker_id = int(user_input[:2])
+    pin = int(user_input[2:])
+    
+    record = Record.query.filter_by(locker_id=locker_id, checked_out=True).first()
+    if record:
+        app.logger.info("Retrieved record %s.", record)
+        if pin == record.pin:
+            _open_locker(locker_id)
+            response = record
+        else: 
+            response = 'err'
+    else:  
+        resonse = 'err'
+    
+    return response
+    
 def _dump_datetime(value):
     """
     Deserialize datetime object into string form for JSON processing.
