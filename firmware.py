@@ -344,18 +344,6 @@ def _protected_input(json_data, parameter_name):
     return str(value)
 
 
-@app.route('/test', methods=['GET'])
-def test_get():
-    return "Hello World!"
-
-
-@app.route('/test2', methods=['POST'])
-def test_post():
-    json_data = request.get_json(force=True)
-    app.logger.debug("JSON=%s", json_data)
-    return jsonify(json_data)
-
-
 if __name__ == '__main__':
     try:
         db.create_all()
