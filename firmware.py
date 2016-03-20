@@ -183,14 +183,14 @@ def open_locker():
     return response.serialize
 
 
-@app.route('/find_open_lockers', methods = ['GET'])
-def find_open_lockers():
+@app.route('/get_open_lockers', methods = ['GET'])
+def get_open_lockers():
     """
     Returns open locker ids
     
     not tested yet
     """
-    open_lockers = _find_open_lockers()
+    open_lockers = _get_open_lockers()
     return jsonify(json_list=[i for i in open_lockers])
 
 
@@ -237,11 +237,11 @@ def _open_locker(locker_id):
     
     return
     
-def _find_open_lockers():
+def _get_open_lockers():
     """
-    Finds all open lockers
+    Private Function to find all open lockers
     
-    :return locker_id:
+    :return list of locker_ids:
     """
     open_lockers = []
     for locker in LOCKER_MAP:
