@@ -82,7 +82,7 @@ def get_num_lockers():
 
     :return: int num of lockers
     """
-    return len(LOCKER_MAP)
+    return jsonify(len(LOCKER_MAP))
 
 
 @app.route('/allocate_locker', methods=['POST'])
