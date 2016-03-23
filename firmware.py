@@ -18,8 +18,8 @@ GPIO_LOCKER3 = 13
 LOCKER_MAP = [GPIO_LOCKER1, GPIO_LOCKER2, GPIO_LOCKER3]
 
 OPEN_TIME = 15
-#GPIO.setmode(GPIO.BOARD)
-#GPIO.setup(LOCKER_MAP, GPIO.OUT, initial=GPIO.LOW)
+GPIO.setmode(GPIO.BOARD)
+GPIO.setup(LOCKER_MAP, GPIO.OUT, initial=GPIO.LOW)
 
 app = Flask(__name__)
 app.logger.addHandler(logging.StreamHandler(sys.stdout))
@@ -82,7 +82,7 @@ def get_num_lockers():
 
     :return: int num of lockers
     """
-    return len(LOCKER_MAP)
+    return jsonify(len(LOCKER_MAP))
 
 
 @app.route('/allocate_locker', methods=['POST'])
@@ -176,23 +176,21 @@ def open_locker():
     locker_id = record.locker_id
     if _is_locker_open(locker_id):
         response = record
-        GPIO.output(locker_id, GPIO.HIGH)
-        time.sleep(OPEN_TIME)
-        GPIO.output(locker_id, GPIO.LOW)
+
     else:
         response = 'err'
 
     return response.serialize
 
 
-@app.route('/find_open_lockers', methods = ['GET'])
-def find_open_lockers():
+@app.route('/get_open_lockers', methods = ['GET'])
+def get_open_lockers():
     """
     Returns open locker ids
     
     not tested yet
     """
-    open_lockers = _find_open_lockers()
+    open_lockers = _get_open_lockers()
     return jsonify(json_list=[i for i in open_lockers])
 
 
@@ -234,12 +232,26 @@ def _allocate_locker(customer_id, pin, locker_id=None):
 
     return new_record.serialize
 
-
-def _find_open_lockers():
+def _open_locker(locker_id):
     """
-    Finds all open lockers
+    Private Open Locker Function
     
-    :return locker_id:
+    Turns GPIO pin related to the locker_id to High for OPEN_TIME seconds
+    
+    :param locker_id:
+    :return:
+    """
+    GPIO.output(locker_id, GPIO.HIGH)
+    time.sleep(OPEN_TIME)
+    GPIO.output(locker_id, GPIO.LOW)
+    
+    return
+    
+def _get_open_lockers():
+    """
+    Private Function to find all open lockers
+    
+    :return list of locker_ids:
     """
     open_lockers = []
     for locker in LOCKER_MAP:
@@ -296,8 +308,25 @@ def _is_locker_open(locker_id):
         status = True
 
     return status
-
-
+    
+def _pin_unlock(user_input):
+    user_input = str(user_input)
+    locker_id = int(user_input[:2])
+    pin = int(user_input[2:])
+    
+    record = Record.query.filter_by(locker_id=locker_id, checked_out=True).first()
+    if record:
+        app.logger.info("Retrieved record %s.", record)
+        if pin == record.pin:
+            _open_locker(locker_id)
+            response = record
+        else: 
+            response = 'err'
+    else:  
+        resonse = 'err'
+    
+    return response
+    
 def _dump_datetime(value):
     """
     Deserialize datetime object into string form for JSON processing.
@@ -323,18 +352,6 @@ def _protected_input(json_data, parameter_name):
     except KeyError:
         value = None
     return str(value)
-
-
-@app.route('/test', methods=['GET'])
-def test_get():
-    return "Hello World!"
-
-
-@app.route('/test2', methods=['POST'])
-def test_post():
-    json_data = request.get_json(force=True)
-    app.logger.debug("JSON=%s", json_data)
-    return jsonify(json_data)
 
 
 if __name__ == '__main__':
