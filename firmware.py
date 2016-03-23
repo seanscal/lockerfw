@@ -196,6 +196,16 @@ def find_open_lockers():
     return jsonify(json_list=[i for i in open_lockers])
 
 
+@app.route('/get_num_open_lockers', methods = ['GET'])
+def get_num_open_lockers():
+    """
+    Returns total number of open lockers
+    """
+    open_lockers = _find_open_lockers()
+    num_open_lockers = len(open_lockers)
+    return str(num_open_lockers)
+
+
 def _allocate_locker(customer_id, pin, locker_id=None):
     """
     Private function to allocate locker to specified customer.
