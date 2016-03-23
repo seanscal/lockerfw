@@ -18,8 +18,8 @@ GPIO_LOCKER3 = 13
 LOCKER_MAP = [GPIO_LOCKER1, GPIO_LOCKER2, GPIO_LOCKER3]
 
 OPEN_TIME = 15
-#GPIO.setmode(GPIO.BOARD)
-#GPIO.setup(LOCKER_MAP, GPIO.OUT, initial=GPIO.LOW)
+GPIO.setmode(GPIO.BOARD)
+GPIO.setup(LOCKER_MAP, GPIO.OUT, initial=GPIO.LOW)
 
 app = Flask(__name__)
 app.logger.addHandler(logging.StreamHandler(sys.stdout))
