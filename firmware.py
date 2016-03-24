@@ -169,14 +169,13 @@ def open_locker():
     """
     json_data = request.get_json(force=True)
     customer_id = _protected_input(json_data, 'customer_id')
-    assert customer_id
+    locker_id = _protected_input(json_data, 'locker_id')
+    assert customer_id, locker_id
     
     # Opens locker for set amount of time
-    record = Record.query.filter_by(customer_id=customer_id, checked_out=True).first()
-    locker_id = record.locker_id
+    record = Record.query.filter_by(customer_id=customer_id, locker_id=locker_id, checked_out=True).first()
     if _is_locker_open(locker_id):
         response = record
-
     else:
         response = 'err'
 
