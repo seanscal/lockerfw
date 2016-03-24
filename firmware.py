@@ -118,6 +118,7 @@ def allocate_locker():
 def start_rental():
     json_data = request.get_json(force=True)
     customer_id = _protected_input(json_data, 'customer_id')
+    assert customer_id
 
     response = _start_rental(customer_id)
     
@@ -152,6 +153,7 @@ def get_customer_status():
     """
     json_data = request.get_json(force=True)
     customer_id = json_data['customer_id']
+    assert customer_id
     record_list = Record.query.filter_by(customer_id=customer_id).all()
     return jsonify(json_list=[i.serialize for i in record_list])
 
@@ -160,9 +162,9 @@ def get_customer_status():
 def open_locker():
     """
     Turns on the GPIO pin associated with the locker. 
-    Locker id is pulled from customer's latest record
     
-    :param: customer_id
+    Requires customer_id and locker_id in json dict
+
     :return: Customer record 
     
     Not Yet Tested
@@ -176,6 +178,7 @@ def open_locker():
     record = Record.query.filter_by(customer_id=customer_id, locker_id=locker_id, checked_out=True).first()
     if _is_locker_open(locker_id):
         response = record
+        _open_locker(locker_id)
     else:
         response = 'err'
 
