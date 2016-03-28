@@ -30,6 +30,7 @@ db = SQLAlchemy(app)
 
 app.logger.info("Started backend engine.")
 
+
 class Record(db.Model):
     __tablename__ = 'records'
     rental_id = db.Column(db.Integer, primary_key=True)
@@ -39,7 +40,7 @@ class Record(db.Model):
     date_in = db.Column(db.DateTime, nullable=True)
     date_out = db.Column(db.DateTime, nullable=True)
     checked_out = db.Column(db.Boolean, nullable=False)
-    pin = db.Column(db.Integer, nullable=False)
+    pin = db.Column(db.Integer, nullable=True)
 
     @property
     def serialize(self):
@@ -90,10 +91,7 @@ def allocate_locker():
     """
     Allocate locker to given user.
 
-    A customer ID and locker ID must be given.
-
-    TODO (If locker number not specified, auto select an open locker.
-    If no lockers are available, return error.)
+    A customer ID must be given.
 
     :return: response
     """
@@ -107,7 +105,7 @@ def allocate_locker():
         if _is_locker_open(locker_id):
             response = _allocate_locker(customer_id, pin, locker_id)
         else:
-            response = "err"
+            response = {'err': 'Locker is not available'}
     else:
         response = _allocate_locker(customer_id, pin)
 
@@ -116,6 +114,12 @@ def allocate_locker():
 
 @app.route('/start_rental', methods=['POST'])
 def start_rental():
+    """
+    Starts rental for given customer 
+
+    :return: rental JSON response
+
+    """
     json_data = request.get_json(force=True)
     customer_id = _protected_input(json_data, 'customer_id')
     assert customer_id
@@ -158,7 +162,7 @@ def get_customer_status():
     return jsonify(json_list=[i.serialize for i in record_list])
 
 
-@app.route('/open_locker',methods=['POST'])
+@app.route('/open_locker', methods=['POST'])
 def open_locker():
     """
     Turns on the GPIO pin associated with the locker. 
@@ -172,20 +176,24 @@ def open_locker():
     json_data = request.get_json(force=True)
     customer_id = _protected_input(json_data, 'customer_id')
     locker_id = _protected_input(json_data, 'locker_id')
-    assert customer_id, locker_id
+    pin = _protected_input(json_data, 'pin')
+    assert (customer_id, locker_id, pin)
     
     # Opens locker for set amount of time
     record = Record.query.filter_by(customer_id=customer_id, locker_id=locker_id, checked_out=True).first()
-    if _is_locker_open(locker_id):
-        response = record
-        _open_locker(locker_id)
+    if record:
+        if record.pin != pin:
+            response = {'err': 'Incorrect pin.'}
+        else:
+            response = record.serialize
+            _open_locker(locker_id)
     else:
-        response = 'err'
+        response = {'err': 'No record found.'}
 
-    return response.serialize
+    return response
 
 
-@app.route('/get_open_lockers', methods = ['GET'])
+@app.route('/get_open_lockers', methods=['GET'])
 def get_open_lockers():
     """
     Returns open locker ids
@@ -196,12 +204,12 @@ def get_open_lockers():
     return jsonify(json_list=[i for i in open_lockers])
 
 
-@app.route('/get_num_open_lockers', methods = ['GET'])
+@app.route('/get_num_open_lockers', methods=['GET'])
 def get_num_open_lockers():
     """
     Returns total number of open lockers
     """
-    open_lockers = _find_open_lockers()
+    open_lockers = _get_open_lockers()
     num_open_lockers = len(open_lockers)
     return str(num_open_lockers)
 
@@ -219,7 +227,10 @@ def _allocate_locker(customer_id, pin, locker_id=None):
     :return:
     """
     if locker_id is None:
-        locker_id = _find_open_lockers()[0]
+        try:
+            locker_id = _get_open_lockers()[0]
+        except IndexError:
+            return {'err': 'There are no available lockers.'}
 
     new_record = Record(rental_id=uuid.uuid4(),
                         customer_id=customer_id,
@@ -233,6 +244,7 @@ def _allocate_locker(customer_id, pin, locker_id=None):
     db.session.commit()
 
     return new_record.serialize
+
 
 def _open_locker(locker_id):
     """
@@ -248,7 +260,8 @@ def _open_locker(locker_id):
     GPIO.output(locker_id, GPIO.LOW)
     
     return
-    
+
+
 def _get_open_lockers():
     """
     Private Function to find all open lockers
@@ -266,8 +279,9 @@ def _get_open_lockers():
 def _start_rental(customer_id):
     """
     Starts Rental of locker related to customer_id
+
+    :return: record
     """
-    
     record = Record.query.filter_by(customer_id=customer_id, checked_out=True).first()
     app.logger.info("Retrieved record %s.", record)
     record.date_in = datetime.utcnow()
@@ -284,7 +298,7 @@ def _deallocate_locker(customer_id):
     If customer has no active rental return error.
 
     :param customer_id:
-    :return:
+    :return: record
     """
     record = Record.query.filter_by(customer_id=customer_id, checked_out=True).first()
     app.logger.info("Retrieved record %s.", record)
@@ -310,7 +324,8 @@ def _is_locker_open(locker_id):
         status = True
 
     return status
-    
+
+
 def _pin_unlock(user_input):
     user_input = str(user_input)
     locker_id = int(user_input[:2])
@@ -325,10 +340,11 @@ def _pin_unlock(user_input):
         else: 
             response = 'err'
     else:  
-        resonse = 'err'
+        response = 'err'
     
     return response
-    
+
+
 def _dump_datetime(value):
     """
     Deserialize datetime object into string form for JSON processing.
