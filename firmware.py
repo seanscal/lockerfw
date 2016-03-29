@@ -161,7 +161,7 @@ def get_customer_status():
 
     :return: a list of record responses
     """
-    customer_id = request.args.get['customer_id']
+    customer_id = request.args.get('customer_id')
     if not customer_id:
         return {'err': 'No customer_id given.'}
     record_list = Record.query.filter_by(customer_id=customer_id).all()
@@ -240,7 +240,7 @@ def _allocate_locker(customer_id, pin, locker_id=None):
         except IndexError:
             return {'err': 'There are no available lockers.'}
 
-    new_record = Record(rental_id=uuid.uuid4(),
+    new_record = Record(rental_id=int(uuid.uuid4().time_low),
                         customer_id=customer_id,
                         locker_id=locker_id,
                         checked_out=True,
