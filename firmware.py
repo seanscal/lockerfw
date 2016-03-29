@@ -161,9 +161,9 @@ def get_customer_status():
 
     :return: a list of record responses
     """
-    json_data = request.get_json(force=True)
-    customer_id = json_data['customer_id']
-    assert customer_id
+    customer_id = request.args.get['customer_id']
+    if not customer_id:
+        return {'err': 'No customer_id given.'}
     record_list = Record.query.filter_by(customer_id=customer_id).all()
     return jsonify(json_list=[i.serialize for i in record_list])
 
