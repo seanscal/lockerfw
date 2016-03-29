@@ -8,6 +8,8 @@ from datetime import datetime
 import RPi.GPIO as GPIO
 import time
 import uuid
+import redis
+import celery
 
 UID = 12345
 COORDINATES = (42.34, -71.09)
@@ -28,8 +30,12 @@ app.logger.info("Firmware application started.")
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///records.db'
 db = SQLAlchemy(app)
 
-app.logger.info("Started backend engine.")
+r_server = redis.Redis('localhost')
+app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
+celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
+celery.conf.update(app.config)
 
+app.logger.info("Started backend engine.")
 
 class Record(db.Model):
     __tablename__ = 'records'
