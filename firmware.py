@@ -221,7 +221,17 @@ def get_num_open_lockers():
     num_open_lockers = len(open_lockers)
     return str(num_open_lockers)
 
-
+@celery.task
+def _check_reservation(customer_id):
+    record = Record.query.filter_by(customer_id=customer_id, checked_out=True).first()
+    time_allocated = (datetime.utcnow() - record.date_allocated).total_seconds()
+    
+    if record.date_in not None and time_allocated > 1200:
+        print "Here we push to server"
+        _deallocate_locker(customer_id)
+    else
+        return
+    
 def _allocate_locker(customer_id, pin, locker_id=None):
     """
     Private function to allocate locker to specified customer.
