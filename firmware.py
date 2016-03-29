@@ -9,7 +9,7 @@ import RPi.GPIO as GPIO
 import time
 import uuid
 import redis
-import celery
+from celery import Celery
 
 UID = 12345
 COORDINATES = (42.34, -71.09)
@@ -183,7 +183,9 @@ def open_locker():
     customer_id = _protected_input(json_data, 'customer_id')
     locker_id = _protected_input(json_data, 'locker_id')
     pin = _protected_input(json_data, 'pin')
-    assert (customer_id, locker_id, pin)
+    assert customer_id
+    assert locker_id
+    assert pin
     
     # Opens locker for set amount of time
     record = Record.query.filter_by(customer_id=customer_id, locker_id=locker_id, checked_out=True).first()
