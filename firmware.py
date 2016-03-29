@@ -324,7 +324,10 @@ def _is_locker_open(locker_id):
     :return: boolean: True if open, False if not open.
     """
     record = Record.query.filter_by(locker_id=locker_id, checked_out=True).all()
-
+    
+    is locker_id not in LOCKER_MAP:
+        return False
+        
     if record:
         app.logger.info("Retrieved record %s.", record)
         status = False
