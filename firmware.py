@@ -116,7 +116,7 @@ def allocate_locker():
     pin = _protected_input(json_data, 'pin')
     assert customer_id
     
-    if locker_id:
+    if locker_id is not None:
         if _is_locker_open(locker_id):
             response = _allocate_locker(customer_id, pin, locker_id)
         else:
@@ -270,7 +270,7 @@ def _allocate_locker(customer_id, pin, locker_id=None):
     db.session.add(new_record)
     db.session.commit()
     
-    _check_reservation(customer_id).apply_async(args=[customer_id], countdown=1200)
+    _check_reservation.apply_async(args=[customer_id], countdown=1200)
     
     return new_record.serialize
 
