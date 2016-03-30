@@ -61,7 +61,16 @@ class Record(db.Model):
             'pin': self.pin
         }
 
-
+@app.route('/get_hub_info' methods = ['GET'])
+def get_hub_info():
+    payload = {'uid' : str(UID),
+               'coorindates': str(COORDINATES),
+               'openUnits' : str(get_num_open_lockers()),
+               'totalUnits' : get_num_lockers()
+               }
+               
+    return jsonify(payload)
+               
 @app.route('/get_uid', methods=['GET'])
 def get_uid():
     """
