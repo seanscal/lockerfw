@@ -61,7 +61,7 @@ class Record(db.Model):
             'pin': self.pin
         }
 
-@app.route('/get_hub_info' methods = ['GET'])
+@app.route('/get_hub_info', methods = ['GET'])
 def get_hub_info():
     payload = {'uid' : str(UID),
                'coorindates': str(COORDINATES),
@@ -235,10 +235,10 @@ def _check_reservation(customer_id):
     record = Record.query.filter_by(customer_id=customer_id, checked_out=True).first()
     time_allocated = (datetime.utcnow() - record.date_allocated).total_seconds()
     
-    if record.date_in not None and time_allocated > 1200:
+    if record.date_in is not None and time_allocated > 1200:
         print "Here we push to server"
         _deallocate_locker(customer_id)
-    else
+    else:
         return
     
 def _allocate_locker(customer_id, pin, locker_id=None):
@@ -346,7 +346,7 @@ def _is_locker_open(locker_id):
     """
     record = Record.query.filter_by(locker_id=locker_id, checked_out=True).all()
     
-    is locker_id not in LOCKER_MAP:
+    if locker_id not in LOCKER_MAP:
         return False
         
     if record:
