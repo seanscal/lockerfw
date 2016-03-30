@@ -32,7 +32,7 @@ db = SQLAlchemy(app)
 
 r_server = redis.Redis('localhost')
 app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
-celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
+celery = Celery(app.import_name)
 celery.conf.update(app.config)
 
 app.logger.info("Started backend engine.")
