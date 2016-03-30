@@ -346,7 +346,7 @@ def _is_locker_open(locker_id):
     """
     record = Record.query.filter_by(locker_id=locker_id, checked_out=True).all()
     
-    if locker_id not in LOCKER_MAP:
+    if int(locker_id) not in LOCKER_MAP:
         return False
         
     if record:
