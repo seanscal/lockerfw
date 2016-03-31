@@ -28,14 +28,26 @@ app.logger.addHandler(logging.StreamHandler(sys.stdout))
 app.logger.setLevel(logging.DEBUG)
 app.logger.info("Firmware application started.")
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///records.db'
+app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
 db = SQLAlchemy(app)
 
-r_server = redis.Redis('localhost')
-app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
-celery = Celery(app.import_name, broker=app.config['CELERY_BROKER_URL'])
-celery.conf.update(app.config)
-
 app.logger.info("Started backend engine.")
+
+r_server = redis.Redis('localhost')
+def make_celery(app):
+    celery = Celery(app.import_name, broker =app.config['CELERY_BROKER_URL'])
+    celery.conf.update(app.config)
+    TaskBase = celery.Task
+    class ContextTask(TaskBase):
+        abstract = True
+        def __call__(self, *args, **kwargs):
+            with app.app_context():
+                return TaskBase.__call__(self,*args,**kwargs)
+    celery.Task = ContextTask
+    return celery
+    
+celery = make_celery(app)
+app.logger.info("Started celery backend")
 
 class Record(db.Model):
     __tablename__ = 'records'
