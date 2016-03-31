@@ -235,8 +235,8 @@ def _check_reservation(customer_id):
     record = Record.query.filter_by(customer_id=customer_id, checked_out=True).first()
     time_allocated = (datetime.utcnow() - record.date_allocated).total_seconds()
     
-    if record.date_in is not None and time_allocated > 1200:
-        print "Here we push to server"
+    if record.date_in is None:
+        app.logger.info("Here we push to server")
         _deallocate_locker(customer_id)
     else:
         return
