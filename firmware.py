@@ -245,13 +245,17 @@ def get_num_open_lockers():
 @celery.task
 def _check_reservation(customer_id):
     record = Record.query.filter_by(customer_id=customer_id, checked_out=True).first()
-    time_allocated = (datetime.utcnow() - record.date_allocated).total_seconds()
+    app.logger.info("Checked record %s.", record)
     
     if record.date_in is None:
         app.logger.info("Here we push to server")
-        _deallocate_locker(customer_id)
+        record.checked_out = False
+        record.date_out = datetime.utcnow()
+        db.session.commit()
     else:
-        return
+        app.logger.info("Didn't de-allocate")
+    
+    return
     
 def _allocate_locker(customer_id, pin, locker_id=None):
     """
