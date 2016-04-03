@@ -4,3 +4,5 @@ Flask-SQLAlchemy==1.0
 RPI.GPIO
 redis
 celery
+subprocess32==3.2.7
+requests
