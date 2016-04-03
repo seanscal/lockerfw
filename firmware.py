@@ -49,6 +49,7 @@ def make_celery(app):
 celery = make_celery(app)
 app.logger.info("Started celery backend")
 
+
 class Record(db.Model):
     __tablename__ = 'records'
     rental_id = db.Column(db.Integer, primary_key=True)
@@ -220,7 +221,7 @@ def open_locker():
     else:
         response = {'err': 'No record found.'}
 
-    return response
+    return jsonify(response)
 
 
 @app.route('/get_open_lockers', methods=['GET'])
@@ -243,6 +244,7 @@ def get_num_open_lockers():
     num_open_lockers = len(open_lockers)
     return str(num_open_lockers)
 
+
 @celery.task
 def _check_reservation(customer_id):
     record = Record.query.filter_by(customer_id=customer_id, checked_out=True).first()
@@ -257,7 +259,8 @@ def _check_reservation(customer_id):
         app.logger.info("Didn't de-allocate")
     
     return
-    
+
+
 def _allocate_locker(customer_id, pin, locker_id=None):
     """
     Private function to allocate locker to specified customer.
@@ -427,4 +430,3 @@ if __name__ == '__main__':
         app.run(host='0.0.0.0', debug=True)
     except KeyboardInterrupt:
         GPIO.cleanup()
-
