@@ -6,6 +6,8 @@ while 1:
         locker_id = input('locker id: ')
         pin = input('pin: ')
         req_data = {'locker_id': str(locker_id), 'pin': str(pin)}
+    except (KeyboardInterrupt, SystemExit):
+        break 
     except:
         pass
     else:
