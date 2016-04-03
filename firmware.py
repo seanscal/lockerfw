@@ -10,7 +10,7 @@ import time
 import uuid
 import redis
 from celery import Celery
-import subprocess32 import call
+from subprocess32 import call
 
 UID = 12345
 COORDINATES = (42.34, -71.09)
@@ -221,7 +221,7 @@ def open_locker():
     else:
         response = {'err': 'No record found.'}
 
-    return response
+    return jsonify(response)
 
 
 @app.route('/get_open_lockers', methods=['GET'])
