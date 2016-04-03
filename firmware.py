@@ -12,7 +12,7 @@ import redis
 from celery import Celery
 
 UID = 12345
-COORDINATES = (42.34, -71.09)
+COORDINATES = {'lat': '42.34', 'long': '-71.09'}
 GPIO_LOCKER1 = 11
 GPIO_LOCKER2 = 12
 GPIO_LOCKER3 = 13
@@ -100,7 +100,7 @@ def get_coordinates():
 
     :return: coordinates
     """
-    return str(COORDINATES)
+    return jsonify(COORDINATES)
 
 
 @app.route('/get_num_lockers', methods=['GET'])
