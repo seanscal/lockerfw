@@ -75,10 +75,11 @@ class Record(db.Model):
 
 @app.route('/get_hub_info', methods = ['GET'])
 def get_hub_info():
-    payload = {'uid' : str(UID),
-               'coorindates': str(COORDINATES),
-               'openUnits' : str(get_num_open_lockers()),
-               'totalUnits' : get_num_lockers()
+    payload = {'uid': str(UID),
+               'lat': str(COORDINATES['lat']),
+               'long': str(COORDINATES['long']),
+               'openUnits': str(get_num_open_lockers()),
+               'totalUnits': get_num_lockers()
                }
                
     return jsonify(payload)
