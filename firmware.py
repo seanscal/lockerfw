@@ -10,7 +10,6 @@ import time
 import uuid
 import redis
 from celery import Celery
-from subprocess32 import call
 
 UID = 12345
 COORDINATES = (42.34, -71.09)
@@ -77,10 +76,10 @@ class Record(db.Model):
 
 @app.route('/get_hub_info', methods = ['GET'])
 def get_hub_info():
-    payload = {'uid' : str(UID),
+    payload = {'uid': str(UID),
                'coorindates': str(COORDINATES),
-               'openUnits' : str(get_num_open_lockers()),
-               'totalUnits' : get_num_lockers()
+               'openUnits': str(get_num_open_lockers()),
+               'totalUnits': get_num_lockers()
                }
                
     return jsonify(payload)
@@ -428,6 +427,5 @@ if __name__ == '__main__':
     try:
         db.create_all()
         app.run(host='0.0.0.0', debug=True)
-        call(['python', 'keypad_entry.py'])
     except KeyboardInterrupt:
         GPIO.cleanup()
