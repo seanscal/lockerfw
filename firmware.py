@@ -10,6 +10,8 @@ import time
 import uuid
 import redis
 from celery import Celery
+from celery.task import tasks
+from celery.task import Task
 
 UID = 12345
 COORDINATES = {'lat': '42.34', 'long': '-71.09'}
@@ -28,7 +30,7 @@ app.logger.addHandler(logging.StreamHandler(sys.stdout))
 app.logger.setLevel(logging.DEBUG)
 app.logger.info("Firmware application started.")
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///records.db'
-app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
+app.config['CELERY_BROKER_URL'] = ''
 db = SQLAlchemy(app)
 
 app.logger.info("Started backend engine.")
@@ -45,10 +47,6 @@ def make_celery(app):
                 return TaskBase.__call__(self,*args,**kwargs)
     celery.Task = ContextTask
     return celery
-    
-celery = make_celery(app)
-app.logger.info("Started celery backend")
-
 
 class Record(db.Model):
     __tablename__ = 'records'
@@ -73,6 +71,25 @@ class Record(db.Model):
             'checkout_out': self.checked_out,
             'pin': self.pin
         }
+        
+class ImageTask(Task):
+    def _check_reservation(customer_id):
+        record = Record.query.filter_by(customer_id=customer_id, checked_out=True).first()
+        app.logger.info("Checked record %s.", record)
+        
+        if record.date_in is None:
+            app.logger.info("Here we push to server")
+            record.checked_out = False
+            record.date_out = datetime.utcnow()
+            db.session.commit()
+        else:
+            app.logger.info("Didn't de-allocate")
+        
+        return
+
+celery = make_celery(app)
+task.register(ImageTask)
+app.logger.info("Started celery backend")
 
 @app.route('/get_hub_info', methods = ['GET'])
 def get_hub_info():
@@ -243,22 +260,6 @@ def get_num_open_lockers():
     open_lockers = _get_open_lockers()
     num_open_lockers = len(open_lockers)
     return str(num_open_lockers)
-
-
-@celery.task
-def _check_reservation(customer_id):
-    record = Record.query.filter_by(customer_id=customer_id, checked_out=True).first()
-    app.logger.info("Checked record %s.", record)
-    
-    if record.date_in is None:
-        app.logger.info("Here we push to server")
-        record.checked_out = False
-        record.date_out = datetime.utcnow()
-        db.session.commit()
-    else:
-        app.logger.info("Didn't de-allocate")
-    
-    return
 
 
 def _allocate_locker(customer_id, pin, locker_id=None):
