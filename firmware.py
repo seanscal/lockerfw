@@ -10,6 +10,7 @@ import time
 import uuid
 import redis
 from celery import Celery
+import subprocess32 import call
 
 UID = 12345
 COORDINATES = (42.34, -71.09)
@@ -48,6 +49,7 @@ def make_celery(app):
     
 celery = make_celery(app)
 app.logger.info("Started celery backend")
+
 
 class Record(db.Model):
     __tablename__ = 'records'
@@ -242,6 +244,7 @@ def get_num_open_lockers():
     num_open_lockers = len(open_lockers)
     return str(num_open_lockers)
 
+
 @celery.task
 def _check_reservation(customer_id):
     record = Record.query.filter_by(customer_id=customer_id, checked_out=True).first()
@@ -256,7 +259,8 @@ def _check_reservation(customer_id):
         app.logger.info("Didn't de-allocate")
     
     return
-    
+
+
 def _allocate_locker(customer_id, pin, locker_id=None):
     """
     Private function to allocate locker to specified customer.
@@ -424,6 +428,6 @@ if __name__ == '__main__':
     try:
         db.create_all()
         app.run(host='0.0.0.0', debug=True)
+        call(['python', 'keypad_entry.py'])
     except KeyboardInterrupt:
         GPIO.cleanup()
-
