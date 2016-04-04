@@ -335,7 +335,7 @@ def _get_customers():
     
     :return list of customer_ids:
     """
-    records = Record.query.filter_by(customer_id=customer_id, checked_out=True).all()
+    records = Record.query.filter_by(checked_out=True).all()
     customers = []
     for record in records:
         customers.append(record)
