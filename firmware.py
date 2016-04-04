@@ -30,7 +30,7 @@ app.logger.addHandler(logging.StreamHandler(sys.stdout))
 app.logger.setLevel(logging.DEBUG)
 app.logger.info("Firmware application started.")
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///records.db'
-app.config['CELERY_BROKER_URL'] = ''
+app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
 db = SQLAlchemy(app)
 
 app.logger.info("Started backend engine.")
