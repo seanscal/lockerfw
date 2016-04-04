@@ -10,8 +10,8 @@ import time
 import uuid
 import redis
 from celery import Celery
-from celery.task import tasks
 from celery.task import Task
+from celery.app.registry import TaskRegistry
 
 UID = 12345
 COORDINATES = {'lat': '42.34', 'long': '-71.09'}
@@ -88,7 +88,7 @@ class ImageTask(Task):
         return
 
 celery = make_celery(app)
-task.register(ImageTask)
+TaskRegistry.register(ImageTask)
 app.logger.info("Started celery backend")
 
 @app.route('/get_hub_info', methods = ['GET'])
