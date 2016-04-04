@@ -142,17 +142,22 @@ def allocate_locker():
     customer_id = _protected_input(json_data, 'customer_id')
     locker_id = _protected_input(json_data, 'locker_id')
     pin = _protected_input(json_data, 'pin')
+    start = _protected_input(json_data, 'start_rental')
+
     assert customer_id
     
     app.logger.info("locker_id : %s", locker_id)
     
-    if locker_id != 'None':
+    if locker_id:
         if _is_locker_open(locker_id):
             response = _allocate_locker(customer_id, pin, locker_id)
         else:
             response = {'err': 'Locker is not available'}
     else:
         response = _allocate_locker(customer_id, pin)
+
+    if start == '1':
+        _start_rental(customer_id)
 
     return jsonify(response)
 
@@ -249,6 +254,7 @@ def get_open_lockers():
     open_lockers = _get_open_lockers()
     return jsonify(json_list=[i for i in open_lockers])
 
+
 @app.route('/get_customers', methods = ['GET'])
 def get_customers():
     """
@@ -256,6 +262,7 @@ def get_customers():
     """
     customers = _get_customers()
     return jsonify(json_list=[i for i in customers])
+
 
 @app.route('/get_num_open_lockers', methods=['GET'])
 def get_num_open_lockers():
@@ -265,6 +272,7 @@ def get_num_open_lockers():
     open_lockers = _get_open_lockers()
     num_open_lockers = len(open_lockers)
     return str(num_open_lockers)
+
 
 def _allocate_locker(customer_id, pin, locker_id=None):
     """
@@ -329,6 +337,7 @@ def _get_open_lockers():
     
     return open_lockers
 
+
 def _get_customers():
     """
     Private Function to find customers with open rentals
@@ -341,7 +350,8 @@ def _get_customers():
         rental = {'customer_id': record.customer_id, 'locker_id': record.locker_id}
         customers.append(rental)
     return customers
-    
+
+
 def _start_rental(customer_id):
     """
     Starts Rental of locker related to customer_id
@@ -438,10 +448,10 @@ def _protected_input(json_data, parameter_name):
     :return:
     """
     try:
-        value = json_data[parameter_name]
+        value = str(json_data[parameter_name])
     except KeyError:
         value = None
-    return str(value)
+    return value
 
 
 if __name__ == '__main__':
