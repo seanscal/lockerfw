@@ -35,7 +35,7 @@ app.logger.info("Started backend engine.")
 
 r_server = redis.Redis('localhost')
 def make_celery(app):
-    celery = Celery(app.import_name, broker =app.config['CELERY_BROKER_URL'], include['firmware',])
+    celery = Celery(app.import_name, broker =app.config['CELERY_BROKER_URL'])
     celery.conf.update(app.config)
     TaskBase = celery.Task
     class ContextTask(TaskBase):
