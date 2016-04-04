@@ -82,7 +82,7 @@ def _check_reservation(customer_id):
         app.logger.info("Here we push to server")
         req_data = {'customer_id' : str(customer_id)}
         try:
-            r = requests.post('http://localhost:5000/deallocate_locker', data=json.dumps(req_data))
+            response = requests.post('http://localhost:5000/deallocate_locker', data=json.dumps(req_data))
         except:
             app.logger.info("Deallocation failed")
     else:
