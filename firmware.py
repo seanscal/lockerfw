@@ -291,7 +291,7 @@ def _allocate_locker(customer_id, pin, locker_id=None):
     db.session.add(new_record)
     db.session.commit()
     
-    _check_reservation.apply_async(args=[customer_id], countdown=1200)
+    ImageTask._check_reservation.apply_async(args=[customer_id], countdown=1200)
     
     return new_record.serialize
 
