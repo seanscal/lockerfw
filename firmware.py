@@ -10,8 +10,6 @@ import time
 import uuid
 import redis
 from celery import Celery
-from celery.task import Task
-from celery.registry import tasks
 
 UID = 12345
 COORDINATES = {'lat': '42.34', 'long': '-71.09'}
