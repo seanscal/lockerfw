@@ -73,6 +73,7 @@ class Record(db.Model):
         }
         
 class ImageTask(Task):
+    @task(name='ImageTask._check_reservation')
     def _check_reservation(customer_id):
         record = Record.query.filter_by(customer_id=customer_id, checked_out=True).first()
         app.logger.info("Checked record %s.", record)
