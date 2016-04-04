@@ -80,9 +80,11 @@ def _check_reservation(customer_id):
         
     if record.date_in is None:
         app.logger.info("Here we push to server")
-        record.checked_out = False
-        record.date_out = datetime.utcnow()
-        db.session.commit()
+        req_data = {'customer_id' : str(customer_id)}
+        try:
+            r = requests.post('http://localhost:5000/deallocate_locker', data=json.dumps(req_data))
+        except:
+            app.logger.info("Deallocation failed")
     else:
         app.logger.info("Didn't de-allocate")
         
