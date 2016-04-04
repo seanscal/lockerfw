@@ -338,7 +338,7 @@ def _get_customers():
     records = Record.query.filter_by(checked_out=True).all()
     customers = []
     for record in records:
-        rental = {'customer_id': record.customer_id, 'locker_id': record.pin}
+        rental = {'customer_id': record.customer_id, 'locker_id': record.locker_id}
         customers.append(rental)
     return customers
     
