@@ -37,7 +37,7 @@ app.logger.info("Started backend engine.")
 
 r_server = redis.Redis('localhost')
 def make_celery(app):
-    celery = Celery(app.import_name, broker =app.config['CELERY_BROKER_URL'])
+    celery = Celery(app.import_name, broker =app.config['CELERY_BROKER_URL'], include['firmware',])
     celery.conf.update(app.config)
     TaskBase = celery.Task
     class ContextTask(TaskBase):
@@ -72,25 +72,23 @@ class Record(db.Model):
             'pin': self.pin
         }
         
-class ImageTask(Task):
-    @Celery.task(name='ImageTask._check_reservation')
-    def _check_reservation(customer_id):
-        record = Record.query.filter_by(customer_id=customer_id, checked_out=True).first()
-        app.logger.info("Checked record %s.", record)
-        
-        if record.date_in is None:
-            app.logger.info("Here we push to server")
-            record.checked_out = False
-            record.date_out = datetime.utcnow()
-            db.session.commit()
-        else:
-            app.logger.info("Didn't de-allocate")
-        
-        return
-
 celery = make_celery(app)
-tasks.register(ImageTask)
 app.logger.info("Started celery backend")
+
+@celery.task(name='firmware._check_reservation')
+def _check_reservation(customer_id):
+    record = Record.query.filter_by(customer_id=customer_id, checked_out=True).first()
+    app.logger.info("Checked record %s.", record)
+        
+    if record.date_in is None:
+        app.logger.info("Here we push to server")
+        record.checked_out = False
+        record.date_out = datetime.utcnow()
+        db.session.commit()
+    else:
+        app.logger.info("Didn't de-allocate")
+        
+    return
 
 @app.route('/get_hub_info', methods = ['GET'])
 def get_hub_info():
