@@ -242,12 +242,18 @@ def open_locker():
 def get_open_lockers():
     """
     Returns open locker ids
-    
-    not tested yet
     """
+    
     open_lockers = _get_open_lockers()
     return jsonify(json_list=[i for i in open_lockers])
 
+@app.route('/get_customers', methods = ['GET'])
+def get_customers():
+    """
+    Return customer ids with open reservations
+    """
+    customers = _get_customers()
+    return jsonify(json_list=[i for i in open_lockers])
 
 @app.route('/get_num_open_lockers', methods=['GET'])
 def get_num_open_lockers():
@@ -257,7 +263,6 @@ def get_num_open_lockers():
     open_lockers = _get_open_lockers()
     num_open_lockers = len(open_lockers)
     return str(num_open_lockers)
-
 
 def _allocate_locker(customer_id, pin, locker_id=None):
     """
@@ -288,7 +293,7 @@ def _allocate_locker(customer_id, pin, locker_id=None):
     db.session.add(new_record)
     db.session.commit()
     
-    _check_reservation.apply_async(args=[customer_id], countdown=1200)
+    #_check_reservation.apply_async(args=[customer_id], countdown=1200)
     
     return new_record.serialize
 
@@ -322,7 +327,18 @@ def _get_open_lockers():
     
     return open_lockers
 
-
+def _get_customers():
+    """
+    Private Function to find customers with open rentals
+    
+    :return list of customer_ids:
+    """
+    records = Record.query.filter_by(customer_id=customer_id, checked_out=True).all()
+    customers = []
+    for record in records:
+        customers.append(record)
+    return customers
+    
 def _start_rental(customer_id):
     """
     Starts Rental of locker related to customer_id
@@ -347,12 +363,15 @@ def _deallocate_locker(customer_id):
     :param customer_id:
     :return: record
     """
-    record = Record.query.filter_by(customer_id=customer_id, checked_out=True).first()
-    app.logger.info("Retrieved record %s.", record)
-    record.checked_out = False
-    record.date_out = datetime.utcnow()
-    db.session.commit()
-    return record.serialize
+    try:
+        record = Record.query.filter_by(customer_id=customer_id, checked_out=True).first()
+        app.logger.info("Retrieved record %s.", record)
+        record.checked_out = False
+        record.date_out = datetime.utcnow()
+        db.session.commit()
+        return record.serialize
+    except AttributeError:
+        return {'err' : 'No locker currently allocated'}
     
 
 def _is_locker_open(locker_id):
