@@ -144,6 +144,8 @@ def allocate_locker():
     pin = _protected_input(json_data, 'pin')
     assert customer_id
     
+    app.logger.info("locker_id : %s", locker_id)
+    
     if locker_id is not None:
         if _is_locker_open(locker_id):
             response = _allocate_locker(customer_id, pin, locker_id)
