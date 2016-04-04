@@ -157,7 +157,7 @@ def allocate_locker():
         response = _allocate_locker(customer_id, pin)
 
     if start == '1':
-        _start_rental(customer_id)
+        response = _start_rental(customer_id)
 
     return jsonify(response)
 
