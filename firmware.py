@@ -146,7 +146,7 @@ def allocate_locker():
     
     app.logger.info("locker_id : %s", locker_id)
     
-    if locker_id is not None:
+    if locker_id != 'None':
         if _is_locker_open(locker_id):
             response = _allocate_locker(customer_id, pin, locker_id)
         else:
