@@ -255,7 +255,7 @@ def get_customers():
     Return customer ids with open reservations
     """
     customers = _get_customers()
-    return jsonify(json_list=[i for i in open_lockers])
+    return jsonify(json_list=[i for i in customers])
 
 @app.route('/get_num_open_lockers', methods=['GET'])
 def get_num_open_lockers():
