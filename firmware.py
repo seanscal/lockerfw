@@ -228,7 +228,7 @@ def open_locker():
     json_data = request.get_json(force=True)
     customer_id = _protected_input(json_data, 'customer_id')
     locker_id = _protected_input(json_data, 'locker_id')
-    pin = _protected_input(json_data, 'pin')
+    pin = int(_protected_input(json_data, 'pin'))
     assert customer_id
     assert locker_id
     assert pin
