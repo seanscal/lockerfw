@@ -338,7 +338,7 @@ def _get_customers():
     records = Record.query.filter_by(checked_out=True).all()
     customers = []
     for record in records:
-        customers.append(record)
+        customers.append(record.customer_id)
     return customers
     
 def _start_rental(customer_id):
