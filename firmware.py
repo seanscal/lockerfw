@@ -286,7 +286,7 @@ def get_num_open_lockers():
     return str(num_open_lockers)
 
 @app.route('/locker_door_open', methods=['GET'])
-def locker_door_open:
+def locker_door_open():
     locker_id = request.args.get('locker_id')
     counter = 0
     for t in xrange(5):
