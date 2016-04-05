@@ -312,11 +312,11 @@ def _allocate_locker(customer_id, pin, locker_id=None):
     db.session.add(new_record)
     db.session.commit()
     
-    #_check_reservation.apply_async(args=[customer_id], countdown=1200)
+    _check_reservation.apply_async(args=[customer_id], countdown=1200)
     
     return new_record.serialize
 
-
+@celery.task(name='firmware._open_locker')
 def _open_locker(locker_id):
     """
     Private Open Locker Function
@@ -332,7 +332,6 @@ def _open_locker(locker_id):
     GPIO.output(locker_id, GPIO.LOW)
     
     return
-
 
 def _get_open_lockers():
     """
