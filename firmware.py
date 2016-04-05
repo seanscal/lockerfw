@@ -417,7 +417,7 @@ def _is_locker_open(locker_id):
 
     return status
 
-
+"""
 def _pin_unlock(user_input):
     user_input = str(user_input)
     locker_id = int(user_input[:2])
@@ -435,7 +435,7 @@ def _pin_unlock(user_input):
         response = 'err'
     
     return response
-
+"""
 
 def _dump_datetime(value):
     """
