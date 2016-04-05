@@ -295,26 +295,31 @@ def _allocate_locker(customer_id, pin, locker_id=None):
     :param locker_id:
     :return:
     """
-    if locker_id is None:
-        try:
-            locker_id = _get_open_lockers()[0]
-        except IndexError:
-            return {'err': 'There are no available lockers.'}
-
-    new_record = Record(rental_id=int(uuid.uuid4().time_low),
-                        customer_id=customer_id,
-                        locker_id=locker_id,
-                        checked_out=True,
-                        pin=pin,
-                        date_allocated=datetime.utcnow()
-                        )
-
-    db.session.add(new_record)
-    db.session.commit()
+    record = Record.query.filter_by(customer_id=customer_id, checked_out=True).first()
+    if record = None:
+        if locker_id is None:
+            try:
+                locker_id = _get_open_lockers()[0]
+            except IndexError:
+                return {'err': 'There are no available lockers.'}
+        
+        new_record = Record(rental_id=int(uuid.uuid4().time_low),
+                            customer_id=customer_id,
+                            locker_id=locker_id,
+                            checked_out=True,
+                            pin=pin,
+                            date_allocated=datetime.utcnow()
+                            )
     
-    _check_reservation.apply_async(args=[customer_id], countdown=1200)
-    
-    return new_record.serialize
+        db.session.add(new_record)
+        db.session.commit()
+        
+        _check_reservation.apply_async(args=[customer_id], countdown=1200)
+        
+        response = new_record.serialize
+    else: 
+        response = {'err' : 'customer_id already has locker allocated'} 
+    return 
 
 @celery.task(name='firmware._open_locker')
 def _open_locker(locker_id):
