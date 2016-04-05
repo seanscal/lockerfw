@@ -292,7 +292,7 @@ def locker_door_open():
     locker_id = request.args.get('locker_id')
     counter = 0
     for t in xrange(5):
-        if ~(GPIO.input(BUTTON_MAP[locker_id])):
+        if GPIO.input(BUTTON_MAP[locker_id]) == False:
             counter += 1
     if counter > 3:
         return 'True'
