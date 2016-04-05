@@ -319,6 +319,7 @@ def _open_locker(locker_id):
     :param locker_id:
     :return:
     """
+    locker_id = int(locker_id)
     GPIO.output(locker_id, GPIO.HIGH)
     time.sleep(OPEN_TIME)
     GPIO.output(locker_id, GPIO.LOW)
