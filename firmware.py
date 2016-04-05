@@ -295,9 +295,9 @@ def locker_door_open():
         if GPIO.input(BUTTON_MAP[locker_id]):
             counter += 1
     if counter > 3:
-        return True
+        return 'True'
     else:
-        return False
+        return 'False'
 
 
 def _allocate_locker(customer_id, pin, locker_id=None):
