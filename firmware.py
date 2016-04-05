@@ -10,6 +10,9 @@ import time
 import uuid
 import redis
 from celery import Celery
+import requests
+import json
+import time
 
 UID = 12345
 COORDINATES = {'lat': '42.34', 'long': '-71.09'}
@@ -73,6 +76,7 @@ class Record(db.Model):
 celery = make_celery(app)
 app.logger.info("Started celery backend")
 
+
 @celery.task(name='firmware._check_reservation')
 def _check_reservation(customer_id):
     record = Record.query.filter_by(customer_id=customer_id, checked_out=True).first()
@@ -90,6 +94,7 @@ def _check_reservation(customer_id):
         
     return
 
+
 @app.route('/get_hub_info', methods = ['GET'])
 def get_hub_info():
     payload = {'uid': str(UID),
@@ -100,7 +105,8 @@ def get_hub_info():
                }
                
     return jsonify(payload)
-               
+
+
 @app.route('/get_uid', methods=['GET'])
 def get_uid():
     """
@@ -439,7 +445,7 @@ def _dump_datetime(value):
     """
     if value is None:
         return None
-    return [value.strftime("%Y-%m-%d"), value.strftime("%H:%M:%S")]
+    return time.mktime(value.timetuple())
 
 
 def _protected_input(json_data, parameter_name):
