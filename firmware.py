@@ -21,10 +21,13 @@ GPIO_LOCKER2 = 12
 GPIO_LOCKER3 = 13
 
 LOCKER_MAP = [GPIO_LOCKER1, GPIO_LOCKER2, GPIO_LOCKER3]
+BUTTON_PINS = [15, 16, 18]
+BUTTON_MAP = {'11' : 15, '12': 16, '13' : 18}
 
 OPEN_TIME = 15
 GPIO.setmode(GPIO.BOARD)
 GPIO.setup(LOCKER_MAP, GPIO.OUT, initial=GPIO.LOW)
+GPIO.setup(BUTTON_PINS, GPIO.IN, pull_up_down = GPIO.PUD_UP)
 
 app = Flask(__name__)
 app.logger.addHandler(logging.StreamHandler(sys.stdout))
@@ -281,6 +284,18 @@ def get_num_open_lockers():
     open_lockers = _get_open_lockers()
     num_open_lockers = len(open_lockers)
     return str(num_open_lockers)
+
+@app.route('/locker_door_open', methods=['GET'])
+def locker_door_open:
+    locker_id = request.args.get('locker_id')
+    counter = 0
+    for t in xrange(5):
+        if GPIO.input(BUTTON_MAP[locker_id]):
+            counter += 1
+    if counter > 3:
+        return True
+    else:
+        return False
 
 
 def _allocate_locker(customer_id, pin, locker_id=None):
