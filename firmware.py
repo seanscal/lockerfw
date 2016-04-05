@@ -247,6 +247,7 @@ def open_locker():
         else:
             response = record.serialize
             _open_locker(locker_id)
+            response['TimeOpened'] = _dump_datetime(datetime.utcnow())
     else:
         response = {'err': 'No record found.'}
 
