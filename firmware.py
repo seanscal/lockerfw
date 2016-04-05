@@ -311,7 +311,7 @@ def _allocate_locker(customer_id, pin, locker_id=None):
     :return:
     """
     record = Record.query.filter_by(customer_id=customer_id, checked_out=True).first()
-    if record = None:
+    if record is None:
         if locker_id is None:
             try:
                 locker_id = _get_open_lockers()[0]
