@@ -84,7 +84,9 @@ app.logger.info("Started celery backend")
 def _check_reservation(customer_id):
     record = Record.query.filter_by(customer_id=customer_id, checked_out=True).first()
     app.logger.info("Checked record %s.", record)
-        
+    if record is None:
+        app.logger.info("Locker Already de-allocated: ending")
+        return
     if record.date_in is None:
         app.logger.info("Here we push to server")
         req_data = {'customer_id' : str(customer_id)}
