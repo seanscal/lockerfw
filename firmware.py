@@ -336,7 +336,7 @@ def _allocate_locker(customer_id, pin, locker_id=None):
         response = new_record.serialize
     else: 
         response = {'err' : 'customer_id already has locker allocated'} 
-    return 
+    return response 
 
 @celery.task(name='firmware._open_locker')
 def _open_locker(locker_id):
