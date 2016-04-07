@@ -1,11 +1,14 @@
 SRCFILES=$(wildcard *.py)
 
 default: all
-all: run
+all: redis run
+
+redis:
+	sudo apt-get -y install redis-server
+	redis-server --daemonize yes
 
 run: $(SRCFILES)
-	/home/pi/redis-stable/src/redis-server --daemonize yes
-	sudo apt-get install python-dev
+	sudo apt-get -y install python-dev
 	pip install --upgrade pip && pip install -r requirements.txt
 	python firmware.py
 
