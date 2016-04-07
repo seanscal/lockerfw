@@ -22,7 +22,7 @@ GPIO_LOCKER3 = 13
 
 LOCKER_MAP = [GPIO_LOCKER1, GPIO_LOCKER2, GPIO_LOCKER3]
 BUTTON_PINS = [15, 16, 18]
-BUTTON_MAP = {'11' : 15, '12': 16, '13' : 18}
+BUTTON_MAP = {'11': 15, '12': 16, '13': 18}
 
 OPEN_TIME = 15
 GPIO.setmode(GPIO.BOARD)
@@ -66,6 +66,7 @@ class Record(db.Model):
     @property
     def serialize(self):
         return {
+            'hub_id': UID,
             'rental_id': self.rental_id,
             'customer_id': self.customer_id,
             'locker_id': self.locker_id,
@@ -93,14 +94,19 @@ def _check_reservation(customer_id):
         try:
             response = requests.post('http://localhost:5000/deallocate_locker', data=json.dumps(req_data))
         except:
-            app.logger.info("Deallocation failed")
+            app.logger.exception("Deallocation failed.")
     else:
         app.logger.info("Didn't de-allocate")
+
+    try:
+        requests.post('http://nulockerhub.com/api/pi/reservationExpired', data=json.dumps(response.serialize))
+    except:
+        app.logger.exception("Reservation expiration request to server failed.")
         
     return
 
 
-@app.route('/get_hub_info', methods = ['GET'])
+@app.route('/get_hub_info', methods=['GET'])
 def get_hub_info():
     payload = {'uid': str(UID),
                'lat': str(COORDINATES['lat']),
