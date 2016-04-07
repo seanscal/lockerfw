@@ -42,17 +42,22 @@ db = SQLAlchemy(app)
 app.logger.info("Started backend engine.")
 
 r_server = redis.Redis('localhost')
+
+
 def make_celery(app):
     celery = Celery(app.import_name, broker =app.config['CELERY_BROKER_URL'])
     celery.conf.update(app.config)
     TaskBase = celery.Task
+
     class ContextTask(TaskBase):
         abstract = True
+
         def __call__(self, *args, **kwargs):
             with app.app_context():
                 return TaskBase.__call__(self,*args,**kwargs)
     celery.Task = ContextTask
     return celery
+
 
 class Record(db.Model):
     __tablename__ = 'records'
@@ -306,7 +311,7 @@ def locker_door_open():
 def _locker_door_open(locker_id):
     counter = 0
     for t in xrange(5):
-        if GPIO.input(BUTTON_MAP[locker_id]) == False:
+        if not GPIO.input(BUTTON_MAP[locker_id]):
             counter += 1
     if counter > 3:
         return 'True'
@@ -349,8 +354,9 @@ def _allocate_locker(customer_id, pin, locker_id=None):
         
         response = new_record.serialize
     else: 
-        response = {'err' : 'customer_id already has locker allocated'} 
+        response = {'err': 'customer_id already has locker allocated'}
     return response 
+
 
 @celery.task(name='firmware._open_locker')
 def _open_locker(locker_id):
@@ -368,6 +374,7 @@ def _open_locker(locker_id):
     GPIO.output(locker_id, GPIO.LOW)
     
     return
+
 
 def _get_open_lockers():
     """
@@ -471,6 +478,7 @@ def _pin_unlock(user_input):
     
     return response
 """
+
 
 def _dump_datetime(value):
     """
