@@ -31,6 +31,8 @@ GPIO.setup(BUTTON_PINS, GPIO.IN, pull_up_down = GPIO.PUD_UP)
 
 app = Flask(__name__)
 app.logger.addHandler(logging.StreamHandler(sys.stdout))
+file_handler = logging.handlers.RotatingFileHandler('/var/log/nu_lockr.log', maxBytes=1000000)
+app.logger.addHandler(file_handler)
 app.logger.setLevel(logging.DEBUG)
 app.logger.info("Firmware application started.")
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///records.db'
@@ -293,11 +295,13 @@ def get_num_open_lockers():
     num_open_lockers = len(open_lockers)
     return str(num_open_lockers)
 
+
 @app.route('/locker_door_open', methods=['GET'])
 def locker_door_open():
     locker_id = request.args.get('locker_id')
     isOpen = _locker_door_open(locker_id)
     return isOpen
+
 
 def _locker_door_open(locker_id):
     counter = 0
