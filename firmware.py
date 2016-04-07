@@ -290,6 +290,10 @@ def get_num_open_lockers():
 @app.route('/locker_door_open', methods=['GET'])
 def locker_door_open():
     locker_id = request.args.get('locker_id')
+    isOpen = _locker_door_open(locker_id)
+    return isOpen
+
+def _locker_door_open(locker_id):
     counter = 0
     for t in xrange(5):
         if GPIO.input(BUTTON_MAP[locker_id]) == False:
@@ -298,7 +302,7 @@ def locker_door_open():
         return 'True'
     else:
         return 'False'
-
+    
 
 def _allocate_locker(customer_id, pin, locker_id=None):
     """
