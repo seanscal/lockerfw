@@ -201,7 +201,7 @@ def start_rental():
     assert customer_id
 
     response = _start_rental(customer_id)
-    
+    _open_locker.apply_async(args=[locker_id])
     return jsonify(response)
 
 
@@ -264,7 +264,7 @@ def open_locker():
             response = {'err': 'Incorrect pin.'}
         else:
             response = record.serialize
-            _open_locker(locker_id)
+            _open_locker.apply_async(args=[locker_id])
             response['TimeOpened'] = _dump_datetime(datetime.utcnow())
     else:
         response = {'err': 'No record found.'}
