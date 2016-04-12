@@ -17,12 +17,13 @@ import time
 UID = 12345
 COORDINATES = {'lat': '42.34', 'long': '-71.09'}
 GPIO_LOCKER1 = 16
-#GPIO_LOCKER2 = 12
-#GPIO_LOCKER3 = 13
+GPIO_LOCKER2 = None
+GPIO_LOCKER3 = None
+BUTTON_PIN_LOCKER1 = 18
 
-LOCKER_MAP = [GPIO_LOCKER1, GPIO_LOCKER2, GPIO_LOCKER3]
-BUTTON_PINS = [18]
-BUTTON_MAP = {'16': 18}
+LOCKER_MAP = [GPIO_LOCKER1]
+BUTTON_PINS = [BUTTON_PIN_LOCKER1]
+BUTTON_MAP = {str(GPIO_LOCKER1): BUTTON_PIN_LOCKER1}
 
 OPEN_TIME = 15
 GPIO.setmode(GPIO.BOARD)
@@ -160,7 +161,15 @@ def allocate_locker():
     pin = _protected_input(json_data, 'pin')
     start = _protected_input(json_data, 'start_rental')
 
-    assert customer_id
+    if not customer_id:
+        reponse = {'err': 'Must provide customer id in order to allocate locker'}
+        return jsonify(response)
+
+    if not pin:
+        response = {'err': 'Must provide pin in order to allocate locker'}
+        return jsonify(response)
+
+    
     
     app.logger.info("locker_id : %s", locker_id)
     
@@ -168,7 +177,7 @@ def allocate_locker():
         if _is_locker_open(locker_id):
             response = _allocate_locker(customer_id, pin, locker_id)
         else:
-            response = {'err': 'Locker is not available'}
+            response = {'err': 'Locker %s is not available' % locker_id}
     else:
         response = _allocate_locker(customer_id, pin)
 
@@ -240,15 +249,13 @@ def open_locker():
     Not Yet Tested
     """
     json_data = request.get_json(force=True)
-    customer_id = _protected_input(json_data, 'customer_id')
     locker_id = _protected_input(json_data, 'locker_id')
     pin = int(_protected_input(json_data, 'pin'))
-    assert customer_id
     assert locker_id
     assert pin
     
     # Opens locker for set amount of time
-    record = Record.query.filter_by(customer_id=customer_id, locker_id=locker_id, checked_out=True).first()
+    record = Record.query.filter_by(locker_id=locker_id, checked_out=True).first()
     if record:
         if record.pin != pin:
             response = {'err': 'Incorrect pin.'}
@@ -293,7 +300,11 @@ def get_num_open_lockers():
 
 @app.route('/locker_door_open', methods=['GET'])
 def locker_door_open():
-    locker_id = request.args.get('locker_id')
+    json_data = request.get_json(force=True)
+    locker_id = _protected_input(json_data, 'locker_id')
+    if not locker_id:
+        response = {'err': 'Must provide locker id'}
+        return jsonify(response)
     isOpen = _locker_door_open(locker_id)
     return isOpen
 
