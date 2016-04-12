@@ -89,15 +89,16 @@ def _check_reservation(customer_id):
         req_data = {'customer_id' : str(customer_id)}
         try:
             response = requests.post('http://localhost:5000/deallocate_locker', data=json.dumps(req_data))
+            try:
+                requests.post('http://nulockerhub.com/api/pi/reservationExpired', data=json.dumps(response.serialize))
+            except:
+                app.logger.exception("Reservation expiration request to server failed.")
         except:
             app.logger.exception("Deallocation failed.")
     else:
         app.logger.info("Didn't de-allocate")
 
-    try:
-        requests.post('http://nulockerhub.com/api/pi/reservationExpired', data=json.dumps(response.serialize))
-    except:
-        app.logger.exception("Reservation expiration request to server failed.")
+
         
     return
 
