@@ -29,21 +29,6 @@ GPIO.setmode(GPIO.BOARD)
 GPIO.setup(LOCKER_MAP, GPIO.OUT, initial=GPIO.LOW)
 GPIO.setup(BUTTON_PINS, GPIO.IN, pull_up_down = GPIO.PUD_UP)
 
-app = Flask(__name__)
-app.logger.addHandler(logging.StreamHandler(sys.stdout))
-file_handler = logging.handlers.RotatingFileHandler('/var/log/nu_lockr.log', maxBytes=1000000)
-app.logger.addHandler(file_handler)
-app.logger.setLevel(logging.DEBUG)
-app.logger.info("Firmware application started.")
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///records.db'
-app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
-db = SQLAlchemy(app)
-
-app.logger.info("Started backend engine.")
-
-r_server = redis.Redis('localhost')
-
-
 def make_celery(app):
     celery = Celery(app.import_name, broker =app.config['CELERY_BROKER_URL'])
     celery.conf.update(app.config)
@@ -509,6 +494,18 @@ def _protected_input(json_data, parameter_name):
 
 if __name__ == '__main__':
     try:
+        app = Flask(__name__)
+        app.logger.addHandler(logging.StreamHandler(sys.stdout))
+        file_handler = logging.handlers.RotatingFileHandler('/var/log/nu_lockr.log', maxBytes=1000000)
+        app.logger.addHandler(file_handler)
+        app.logger.setLevel(logging.DEBUG)
+        app.logger.info("Firmware application started.")
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///records.db'
+        app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
+        db = SQLAlchemy(app)
+        app.logger.info("Started backend engine.")
+        r_server = redis.Redis('localhost')
+        
         db.create_all()
         app.run(host='0.0.0.0', debug=True)
     except KeyboardInterrupt:
