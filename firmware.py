@@ -90,15 +90,16 @@ def _check_reservation(customer_id):
         req_data = {'customer_id' : str(customer_id)}
         try:
             response = requests.post('http://localhost:5000/deallocate_locker', data=json.dumps(req_data))
+            try:
+                requests.post('http://nulockerhub.com/api/pi/reservationExpired', data=json.dumps(response.serialize))
+            except:
+                app.logger.exception("Reservation expiration request to server failed.")
         except:
             app.logger.exception("Deallocation failed.")
     else:
         app.logger.info("Didn't de-allocate")
 
-    try:
-        requests.post('http://nulockerhub.com/api/pi/reservationExpired', data=json.dumps(response.serialize))
-    except:
-        app.logger.exception("Reservation expiration request to server failed.")
+
         
     return
 
@@ -161,24 +162,37 @@ def allocate_locker():
     start = _protected_input(json_data, 'start_rental')
 
     if not customer_id:
-        reponse = {'err': 'Must provide customer id in order to allocate locker'}
+        response = {'err': 'Must provide customer id in order to allocate locker'}
+        app.logger.error("Error in allocate_locker: %s", response['err'])
         return jsonify(response)
 
     if not pin:
         response = {'err': 'Must provide pin in order to allocate locker'}
+        app.logger.error("Error in allocate_locker: %s", response['err'])
         return jsonify(response)
 
-    
-    
-    app.logger.info("locker_id : %s", locker_id)
-    
-    if locker_id:
-        if _is_locker_open(locker_id):
-            response = _allocate_locker(customer_id, pin, locker_id)
-        else:
-            response = {'err': 'Locker %s is not available' % locker_id}
+    if not locker_id:
+        try:
+            locker_id = _get_open_lockers()[0]
+        except IndexError:
+            response = {'err': 'There are no available lockers.'}
+            app.logger.error("Error in allocate_locker: %s", response['err'])
+            return jsonify(response)
     else:
-        response = _allocate_locker(customer_id, pin)
+        if not _is_locker_open(locker_id):
+            response = {'err': 'Locker %s is not available' % locker_id}
+            app.logger.error("Error in allocate_locker: %s", response['err'])
+            return jsonify(response)
+
+    record = Record.query.filter_by(customer_id=customer_id, checked_out=True).first()
+    if record:
+        response = {'err': 'Customer %s already has locker checked out, not allocating' % customer_id}
+        app.logger.error("Error in allocate_locker: %s", response['err'])
+        return jsonify(response)
+
+    app.logger.info("Allocating locker &s for customer id %s", locker_id, customer_id)
+    
+    response = _allocate_locker(customer_id, pin, locker_id)
 
     if start == '1':
         response = _start_rental(customer_id)
@@ -196,10 +210,16 @@ def start_rental():
     """
     json_data = request.get_json(force=True)
     customer_id = _protected_input(json_data, 'customer_id')
-    assert customer_id
+    if not customer_id:
+        response = {'err': 'Must provide customer id in order to start rental'}
+        app.logger.error("Error in start_rental: %s", response['err'])
+        return jsonify(response)
 
     response = _start_rental(customer_id)
-    _open_locker.apply_async(args=[locker_id])
+
+    record = Record.query.filter_by(customer_id=customer_id, checked_out=True).first()
+    _open_locker.apply_async(args=[record.locker_id])
+
     return jsonify(response)
 
 
@@ -213,11 +233,15 @@ def deallocate_locker():
     :return: response
     """
     json_data = request.get_json(force=True)
-
     customer_id = _protected_input(json_data, 'customer_id')
-    assert customer_id
+
+    if not customer_id:
+        response = {'err': 'Must provide customer id in order to deallocate'}
+        app.logger.error("Error in deallocate_locker: %s", response['err'])
+        return jsonify(response)
 
     response = _deallocate_locker(customer_id)
+    app.logger.info("Deallocate locker for customer %s", customer_id)
 
     return jsonify(response)
 
@@ -250,14 +274,23 @@ def open_locker():
     json_data = request.get_json(force=True)
     locker_id = _protected_input(json_data, 'locker_id')
     pin = int(_protected_input(json_data, 'pin'))
-    assert locker_id
-    assert pin
-    
+
+    if not locker_id:
+        response = {'err': 'Must provide locker id in order to open locker'}
+        app.logger.error("Error in open_locker: %s", response['err'])
+        return jsonify(response)
+
+    if not pin:
+        response = {'err': 'Must provide pin in order to open locker'}
+        app.logger.error("Error in open_locker: %s", response['err'])
+        return jsonify(response)
+
     # Opens locker for set amount of time
     record = Record.query.filter_by(locker_id=locker_id, checked_out=True).first()
     if record:
         if record.pin != pin:
             response = {'err': 'Incorrect pin.'}
+            app.logger.error("Error in open_locker: %s", response['err'])
         else:
             response = record.serialize
             _open_locker.apply_async(args=[locker_id])
@@ -273,12 +306,11 @@ def get_open_lockers():
     """
     Returns open locker ids
     """
-    
     open_lockers = _get_open_lockers()
     return jsonify(json_list=[i for i in open_lockers])
 
 
-@app.route('/get_customers', methods = ['GET'])
+@app.route('/get_customers', methods=['GET'])
 def get_customers():
     """
     Return customer ids with open reservations
@@ -299,8 +331,7 @@ def get_num_open_lockers():
 
 @app.route('/locker_door_open', methods=['GET'])
 def locker_door_open():
-    json_data = request.get_json(force=True)
-    locker_id = _protected_input(json_data, 'locker_id')
+    locker_id = request.args.get('locker_id')
     if not locker_id:
         response = {'err': 'Must provide locker id'}
         return jsonify(response)
@@ -331,30 +362,20 @@ def _allocate_locker(customer_id, pin, locker_id=None):
     :param locker_id:
     :return:
     """
-    record = Record.query.filter_by(customer_id=customer_id, checked_out=True).first()
-    if record is None:
-        if locker_id is None:
-            try:
-                locker_id = _get_open_lockers()[0]
-            except IndexError:
-                return {'err': 'There are no available lockers.'}
-        
-        new_record = Record(rental_id=int(uuid.uuid4().time_low),
-                            customer_id=customer_id,
-                            locker_id=locker_id,
-                            checked_out=True,
-                            pin=pin,
-                            date_allocated=datetime.utcnow()
-                            )
+    new_record = Record(rental_id=int(uuid.uuid4().time_low),
+                        customer_id=customer_id,
+                        locker_id=locker_id,
+                        checked_out=True,
+                        pin=pin,
+                        date_allocated=datetime.utcnow()
+                        )
     
-        db.session.add(new_record)
-        db.session.commit()
+    db.session.add(new_record)
+    db.session.commit()
         
-        _check_reservation.apply_async(args=[customer_id], countdown=30)
+    _check_reservation.apply_async(args=[customer_id], countdown=30)
         
-        response = new_record.serialize
-    else: 
-        response = {'err': 'customer_id already has locker allocated'}
+    response = new_record.serialize
     return response 
 
 
@@ -434,9 +455,12 @@ def _deallocate_locker(customer_id):
         record.checked_out = False
         record.date_out = datetime.utcnow()
         db.session.commit()
-        return record.serialize
+        response = record.serialize
     except AttributeError:
-        return {'err' : 'No locker currently allocated'}
+        response = {'err': 'No checked-out locker found for customer %s' % customer_id}
+        app.logger.error("Error in deallocate_locker: %s", response['err'])
+
+    return response
     
 
 def _is_locker_open(locker_id):
